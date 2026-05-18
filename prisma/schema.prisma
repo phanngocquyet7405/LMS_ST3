@@ -1,0 +1,140 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  ADMIN
+  LIBRARIAN
+  READER
+}
+
+enum BorrowStatus {
+  BORROWING
+  RETURNED
+  OVERDUE
+}
+
+enum PaymentStatus {
+  PENDING
+  PAID
+}
+
+model User {
+  id       Int    @id @default(autoincrement())
+  fullName String
+  email    String @unique
+  password String
+
+  phone   String?
+  address String?
+
+  role Role @default(READER)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  borrows Borrow[]
+}
+
+model Category {
+  id          Int     @id @default(autoincrement())
+  name        String  @unique
+  description String?
+
+  books Book[]
+}
+
+model Author {
+  id          Int       @id @default(autoincrement())
+  name        String    
+  email       String?   @unique 
+  birthDate   DateTime? 
+  location    String?   
+  bio         String?   @db.Text
+  imageUrl    String?
+  
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  
+  // Quan hệ 1-N: Một tác giả có thể có nhiều sách
+  books       Book[]
+}
+
+model Book {
+  id          Int       @id @default(autoincrement())
+  title       String
+  isbn        String    @unique
+  description String?
+  imageUrl    String?
+  quantity    Int       @default(0)
+  available   Int       @default(0)
+  publishedAt DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  authorId    Int?
+
+  author      Author?   @relation(fields: [authorId], references: [id])
+
+  categoryId  Int?
+  category    Category? @relation(fields: [categoryId], references: [id])
+
+  borrowItems BorrowItem[]
+}
+
+model Borrow {
+  id Int @id @default(autoincrement())
+
+  userId Int
+
+  borrowDate DateTime @default(now())
+
+  dueDate DateTime
+
+  returnDate DateTime?
+
+  status BorrowStatus @default(BORROWING)
+
+  totalFine Float @default(0)
+
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+
+  items BorrowItem[]
+  fine  Fine?
+}
+
+model BorrowItem {
+  id Int @id @default(autoincrement())
+
+  borrowId Int
+  bookId   Int
+
+  quantity Int
+
+  borrow Borrow @relation(fields: [borrowId], references: [id])
+
+  book Book @relation(fields: [bookId], references: [id])
+}
+
+model Fine {
+  id Int @id @default(autoincrement())
+
+  borrowId Int @unique
+
+  amount Float
+
+  reason String?
+
+  status PaymentStatus @default(PENDING)
+
+  createdAt DateTime @default(now())
+
+  borrow Borrow @relation(fields: [borrowId], references: [id])
+}
