@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, ParseIntPipe, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, ParseIntPipe, UseGuards, Query } from '@nestjs/common';
 import { AuthorsService } from './authors.service';
 import { CreateAuthorDto } from './dto/create-author.dto';
 import { UpdateAuthorDto } from './dto/update-author.dto';
@@ -17,9 +17,18 @@ export class AuthorsController {
     return this.authorsService.create(dto);
   }
 
+  TypeScript
   @Get()
-  findAll() {
-    return this.authorsService.findAll();
+  findAll(
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+    @Query('search') search?: string,
+  ) {
+    return this.authorsService.findAll(
+      Number(page) || 1,
+      Number(limit) || 10,
+      search || '',
+    );
   }
 
   @Get(':id')

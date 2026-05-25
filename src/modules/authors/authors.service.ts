@@ -38,17 +38,46 @@ export class AuthorsService {
     });
   }
 
-  async findAll() {
-    return this.prisma.author.findMany({
+  async findAll(page = 1, limit = 10, search = '') {
+    const skip = (page - 1) * limit;
+
+    // 1. Tìm kiếm theo tên hoặc email tác giả
+    const whereCondition = search
+      ? {
+        OR: [
+          { name: { contains: search, mode: 'insensitive' as const } },
+          { email: { contains: search, mode: 'insensitive' as const } },
+        ],
+      }
+      : {};
+
+    // 2. Đếm tổng số lượng tác giả thỏa mãn điều kiện
+    const total = await this.prisma.author.count({
+      where: whereCondition,
+    });
+
+    // 3. Lấy dữ liệu phân trang thực tế
+    const data = await this.prisma.author.findMany({
+      where: whereCondition,
+      skip: +skip,
+      take: +limit,
       include: {
         _count: {
           select: { books: true },
         },
       },
       orderBy: {
-        createdAt: 'desc',
+        id: 'desc',
       },
     });
+
+    // 4. Trả về đúng cấu trúc Object phân trang
+    return {
+      data,
+      total,
+      page,
+      limit,
+    };
   }
 
   async findOne(id: number) {

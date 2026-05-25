@@ -31,39 +31,43 @@ export class BooksService {
         });
     }
 
-    async findAll(
-        page = 1,
-        limit = 10,
-        search = '',
-    ) {
+    async findAll(page = 1, limit = 10, search = '') {
         const skip = (page - 1) * limit;
 
-        return this.prisma.book.findMany({
+        // 1. Đếm tổng số bản ghi thỏa mãn điều kiện search
+        const total = await this.prisma.book.count({
+            where: {
+                OR: [
+                    { title: { contains: search, mode: 'insensitive' } },
+                    { isbn: { contains: search, mode: 'insensitive' } },
+                ],
+            },
+        });
+
+        // 2. Lấy dữ liệu phân trang
+        const data = await this.prisma.book.findMany({
             skip: +skip,
             take: +limit,
-            // Đính kèm song song thông tin chi tiết Danh mục & Tác giả
+            where: {
+                OR: [
+                    { title: { contains: search, mode: 'insensitive' } },
+                    { isbn: { contains: search, mode: 'insensitive' } },
+                ],
+            },
             include: {
                 category: true,
                 author: true
             },
-            where: {
-                OR: [
-                    {
-                        title: {
-                            contains: search,
-                        },
-                    },
-                    {
-                        // Truy vấn tìm kiếm theo tên của Tác giả từ quan hệ bảng liên kết
-                        author: {
-                            name: {
-                                contains: search,
-                            }
-                        },
-                    },
-                ],
-            },
+            orderBy: { id: 'desc' }
         });
+
+        // 3. Trả về đúng cấu trúc Frontend cần
+        return {
+            data,
+            total,
+            page,
+            limit
+        };
     }
 
     async findOne(id: number) {
