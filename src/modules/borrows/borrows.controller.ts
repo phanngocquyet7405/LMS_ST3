@@ -39,16 +39,17 @@ export class BorrowController {
         return this.borrowService.findOne(id);
     }
 
-    @Patch(':id/return')
-    //không cần dùng AuthGuard vì người dùng có thể tự trả sách của mình, chỉ cần kiểm tra xem sách đó có phải của người dùng hay không trong service
-    returnBorrow(@Param('id', ParseIntPipe) id: number) {
-        return this.borrowService.returnBorrow(id);
-    }
+    // borrows.controller.ts
 
-    @Patch('overdue/check')
+    @Patch('overdue/check')   // ← tĩnh lên trước
     @UseGuards(RolesGuard)
     @Roles('ADMIN', 'LIBRARIAN')
     checkOverdue() {
         return this.borrowService.checkOverdue();
+    }
+
+    @Patch(':id/return')      // ← động xuống sau
+    returnBorrow(@Param('id', ParseIntPipe) id: number) {
+        return this.borrowService.returnBorrow(id);
     }
 }
