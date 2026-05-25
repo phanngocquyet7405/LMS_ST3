@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import authorService from "../../service/AuthorService";
 import type { Author } from "@/lib/index";
 import { getInitials } from "@/lib/utils";
+import { AddAuthorModal } from "@/src/components/modals/AddAuthorModal";
 import {
   Plus,
   MapPin,
@@ -19,7 +20,8 @@ export default function AuthorsPage() {
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
   const [totalElements, setTotalElements] = useState(0);
-  const [search, setSearch] = useState(""); // Thêm state search để đồng bộ tối ưu với getAll
+  const [search, setSearch] = useState("");
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const PER_PAGE = 8;
 
   useEffect(() => {
@@ -63,11 +65,16 @@ export default function AuthorsPage() {
       setAuthors(res.data || []);
       setTotalElements(res.total || 0);
     } catch (err) {
-      console.error(err);
+      console.error("[v0] Error deleting author:", err);
       alert("Có lỗi xảy ra khi xóa tác giả.");
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleAddAuthorSuccess = (newAuthor: Author) => {
+    setAuthors([newAuthor, ...authors.slice(0, PER_PAGE - 1)]);
+    setTotalElements(totalElements + 1);
   };
 
   const totalPages = Math.ceil(totalElements / PER_PAGE) || 1;
@@ -88,7 +95,10 @@ export default function AuthorsPage() {
             Manage library authors, biographies, and localized origins.
           </p>
         </div>
-        <button className="bg-[#2170e4] text-white text-xs font-semibold tracking-wider uppercase px-4 py-2.5 rounded-lg flex items-center gap-2 hover:bg-[#0058be] transition-colors shadow-sm">
+        <button 
+          onClick={() => setIsAddModalOpen(true)}
+          className="bg-[#2170e4] text-white text-xs font-semibold tracking-wider uppercase px-4 py-2.5 rounded-lg flex items-center gap-2 hover:bg-[#0058be] transition-colors shadow-sm"
+        >
           <Plus size={16} /> Add New Author
         </button>
       </div>
@@ -211,6 +221,12 @@ export default function AuthorsPage() {
           </button>
         </div>
       </div>
+
+      <AddAuthorModal
+        isOpen={isAddModalOpen}
+        onClose={() => setIsAddModalOpen(false)}
+        onSuccess={handleAddAuthorSuccess}
+      />
     </div>
   );
 }

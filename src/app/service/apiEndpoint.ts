@@ -14,6 +14,7 @@ export const API_ENDPOINTS = {
 
     USERS: {
         BASE: `${BASE_URL}/users`,
+        ME: `${BASE_URL}/users/me`,
         BY_ID: (id: number) => `${BASE_URL}/users/${id}`,
         LIST: (page = 1, limit = 10, search = "") =>
             `${BASE_URL}/users?page=${page}&limit=${limit}&search=${encodeURIComponent(search)}`,

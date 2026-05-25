@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import bookService from "../../service/BookService";
 import type { Book } from "@/lib/index";
+import { AddBookModal } from "@/src/components/modals/AddBookModal";
 import {
   Plus,
   Search,
@@ -37,6 +38,7 @@ export default function BooksPage() {
   const [page, setPage] = useState(1);
   const [totalElements, setTotalElements] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const LIMIT = 10;
 
   useEffect(() => {
@@ -79,11 +81,15 @@ export default function BooksPage() {
       setBooks(res.data || []);
       setTotalElements(res.total || 0);
     } catch (err) {
-      console.error(err);
-    }
-    {
+      console.error("[v0] Error deleting book:", err);
+    } finally {
       setLoading(false);
     }
+  };
+
+  const handleAddBookSuccess = (newBook: Book) => {
+    setBooks([newBook, ...books.slice(0, LIMIT - 1)]);
+    setTotalElements(totalElements + 1);
   };
 
   const totalPages = Math.ceil(totalElements / LIMIT) || 1;
@@ -116,7 +122,10 @@ export default function BooksPage() {
             Manage library inventory, add new titles, and track availability.
           </p>
         </div>
-        <button className="bg-[#0058be] text-white text-[12px] font-semibold tracking-[0.05em] uppercase px-6 py-3 rounded-lg flex items-center gap-2 hover:bg-[#005ac2] transition-colors shadow-sm whitespace-nowrap">
+        <button 
+          onClick={() => setIsAddModalOpen(true)}
+          className="bg-[#0058be] text-white text-[12px] font-semibold tracking-[0.05em] uppercase px-6 py-3 rounded-lg flex items-center gap-2 hover:bg-[#005ac2] transition-colors shadow-sm whitespace-nowrap"
+        >
           <Plus size={16} /> Add New Book
         </button>
       </div>
@@ -332,6 +341,12 @@ export default function BooksPage() {
           </div>
         </div>
       </div>
+
+      <AddBookModal
+        isOpen={isAddModalOpen}
+        onClose={() => setIsAddModalOpen(false)}
+        onSuccess={handleAddBookSuccess}
+      />
     </div>
   );
 }
