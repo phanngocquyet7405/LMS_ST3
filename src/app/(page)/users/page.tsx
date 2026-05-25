@@ -1,7 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import userService from "../../service/UserService";
+import AuthService from "../../service/AuthService";
 import type { User } from "@/lib/index";
 import {
   Plus,
@@ -14,6 +16,7 @@ import {
   Mail,
   Phone,
   Shield,
+  AlertCircle,
 } from "lucide-react";
 
 const ROLE_BADGE = (role: string) => {
@@ -48,15 +51,23 @@ const STATUS_BADGE = (active: boolean) => {
 };
 
 export default function UsersPage() {
+  const router = useRouter();
   const [users, setUsers] = useState<User[]>([]);
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
   const [totalElements, setTotalElements] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const LIMIT = 10;
 
   useEffect(() => {
     let isMounted = true;
+
+    // Check if user is authenticated
+    if (!AuthService.isAuthenticated()) {
+      router.push("/auth/login");
+      return;
+    }
 
     userService
       .getAll(page, LIMIT, search)
@@ -69,10 +80,12 @@ export default function UsersPage() {
         setUsers(userList);
         setTotalElements(total);
         setLoading(false);
+        setError(null);
       })
       .catch((err) => {
         if (isMounted) {
-          console.error("Error fetching users:", err);
+          console.error("[v0] Error fetching users:", err);
+          setError(err.response?.data?.message || "Failed to load users");
           setLoading(false);
         }
       });
@@ -80,7 +93,7 @@ export default function UsersPage() {
     return () => {
       isMounted = false;
     };
-  }, [page, search]);
+  }, [page, search, router]);
 
   const handleDelete = async (id: number) => {
     if (!confirm("Are you sure you want to delete this user?")) return;
@@ -131,6 +144,17 @@ export default function UsersPage() {
           <Plus size={16} /> Add New User
         </button>
       </div>
+
+      {/* Error Alert */}
+      {error && (
+        <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg flex items-start gap-3">
+          <AlertCircle size={20} className="text-red-600 flex-shrink-0 mt-0.5" />
+          <div>
+            <h3 className="font-semibold text-red-900">Error</h3>
+            <p className="text-sm text-red-700">{error}</p>
+          </div>
+        </div>
+      )}
 
       {/* Filter Bar */}
       <div className="bg-white rounded-xl border border-[#c2c6d6] p-4 mb-6 shadow-sm">
@@ -210,7 +234,7 @@ export default function UsersPage() {
               ) : (
                 users.map((user) => {
                   const roleBadge = ROLE_BADGE(user.role || "USER");
-                  const statusBadge = STATUS_BADGE(user.active !== false);
+                  const statusBadge = STATUS_BADGE(true); // User from list is always active
                   const joinDate = user.createdAt
                     ? new Date(user.createdAt).toLocaleDateString("en-US")
                     : "—";
@@ -223,7 +247,7 @@ export default function UsersPage() {
                       <td className="px-6 py-4">
                         <div>
                           <div className="font-semibold text-[16px] text-[#191c1e] group-hover:text-[#0058be] transition-colors">
-                            {user.fullName || user.name || "—"}
+                            {user.fullName || "—"}
                           </div>
                           <div className="text-[13px] text-[#424754] mt-0.5">
                             ID: {user.id}

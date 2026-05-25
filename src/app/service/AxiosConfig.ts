@@ -27,11 +27,20 @@ axiosClient.interceptors.request.use(
 axiosClient.interceptors.response.use(
     (response) => response,
     (error) => {
+        console.error("[v0] API Error:", {
+            status: error.response?.status,
+            data: error.response?.data,
+            message: error.message,
+        });
+
         if (error.response?.status === 401) {
             if (typeof window !== "undefined") {
                 localStorage.removeItem("access_token");
                 localStorage.removeItem("user");
-                window.location.href = "/login";
+                // Redirect to login only if not already on login page
+                if (!window.location.pathname.includes("/login")) {
+                    window.location.href = "/auth/login";
+                }
             }
         }
         return Promise.reject(error);
