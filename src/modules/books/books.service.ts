@@ -38,8 +38,8 @@ export class BooksService {
         const total = await this.prisma.book.count({
             where: {
                 OR: [
-                    { title: { contains: search, mode: 'insensitive' } },
-                    { isbn: { contains: search, mode: 'insensitive' } },
+                    { title: { contains: search } },
+                    { isbn: { contains: search } },
                 ],
             },
         });
@@ -50,8 +50,8 @@ export class BooksService {
             take: +limit,
             where: {
                 OR: [
-                    { title: { contains: search, mode: 'insensitive' } },
-                    { isbn: { contains: search, mode: 'insensitive' } },
+                    { title: { contains: search } },
+                    { isbn: { contains: search } },
                 ],
             },
             include: {
