@@ -12,12 +12,21 @@ class FineService {
         PaginatedResponse<Fine>
     > {
 
-        const response =
-            await axiosClient.get(
-                API_ENDPOINTS.FINES.BASE
-            );
+        try {
+            const response =
+                await axiosClient.get(
+                    API_ENDPOINTS.FINES.BASE
+                );
 
-        return response.data;
+            return response.data;
+        } catch (error: any) {
+            console.error("[v0] Error getting fines:", error);
+            if (error.response?.status === 403) {
+                console.warn("[v0] Fines API not available");
+                return { data: [], total: 0, page: 1, limit: 10 };
+            }
+            throw error;
+        }
     }
 
     async getById(
