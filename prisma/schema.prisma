@@ -11,6 +11,20 @@ enum Role {
   ADMIN
   LIBRARIAN
   READER
+  CLIENT
+}
+
+enum AccountStatus {
+  PENDING_APPROVAL // Đang chờ duyệt lên READER
+  APPROVED         // Đã là READER chính thức
+  REJECTED         // Bị từ chối (thông tin sai/quá tuổi...)
+  NONE             // Tài khoản CLIENT mới tạo, chưa gửi yêu cầu duyệt
+}
+
+// QĐ-01: Thêm loại độc giả X, Y
+enum ReaderType {
+  X
+  Y
 }
 
 enum BorrowStatus {
@@ -22,6 +36,7 @@ enum BorrowStatus {
 enum PaymentStatus {
   PENDING
   PAID
+  PARTIAL 
 }
 
 model User {
@@ -29,40 +44,41 @@ model User {
   fullName String
   email    String @unique
   password String
+  phone    String?
+  address  String?
+  role     Role   @default(CLIENT)
 
-  phone   String?
-  address String?
-
-  role Role @default(READER)
+  birthDate  DateTime?   
+  readerType ReaderType? @default(X)
+  expiryDate DateTime?   
+  totalDebt  Float       @default(0)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  borrows Borrow[]
+  borrows  Borrow[]
+  receipts Receipt[]
 }
 
 model Category {
   id          Int     @id @default(autoincrement())
   name        String  @unique
   description String?
-
-  books Book[]
+  books       Book[]
 }
 
 model Author {
-  id          Int       @id @default(autoincrement())
-  name        String    
-  email       String?   @unique 
-  birthDate   DateTime? 
-  location    String?   
-  bio         String?   @db.Text
-  imageUrl    String?
-  
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-  
-  // Quan hệ 1-N: Một tác giả có thể có nhiều sách
-  books       Book[]
+  id        Int       @id @default(autoincrement())
+  name      String
+  email     String?   @unique
+  birthDate DateTime?
+  location  String?
+  bio       String?   @db.Text
+  imageUrl  String?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  books Book[]
 }
 
 model Book {
@@ -71,70 +87,79 @@ model Book {
   isbn        String    @unique
   description String?
   imageUrl    String?
-  quantity    Int       @default(0)
-  available   Int       @default(0)
-  publishedAt DateTime?
+  quantity    Int       @default(0) 
+  available   Int       @default(0) 
+  
+  publishYear Int       
+  price       Float     @default(0) 
+
+  publishedAt DateTime? 
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
 
-  authorId    Int?
+  authorId Int?
+  author   Author? @relation(fields: [authorId], references: [id])
 
-  author      Author?   @relation(fields: [authorId], references: [id])
-
-  categoryId  Int?
-  category    Category? @relation(fields: [categoryId], references: [id])
+  categoryId Int?
+  category   Category? @relation(fields: [categoryId], references: [id])
 
   borrowItems BorrowItem[]
 }
 
 model Borrow {
-  id Int @id @default(autoincrement())
-
-  userId Int
-
-  borrowDate DateTime @default(now())
-
-  dueDate DateTime
-
-  returnDate DateTime?
-
-  status BorrowStatus @default(BORROWING)
-
-  totalFine Float @default(0)
+  id         Int          @id @default(autoincrement())
+  userId     Int
+  borrowDate DateTime     @default(now())
+  dueDate    DateTime     
+  status     BorrowStatus @default(BORROWING)
+  totalFine  Float        @default(0)
 
   createdAt DateTime @default(now())
-
-  user User @relation(fields: [userId], references: [id])
+  user      User     @relation(fields: [userId], references: [id])
 
   items BorrowItem[]
-  fine  Fine?
+  fines Fine[]
 }
 
 model BorrowItem {
-  id Int @id @default(autoincrement())
-
+  id       Int @id @default(autoincrement())
   borrowId Int
   bookId   Int
+  quantity Int @default(1)
 
-  quantity Int
+  returnDate   DateTime? 
+  lateDays     Int       @default(0)
+  fineForBook  Float     @default(0)
 
   borrow Borrow @relation(fields: [borrowId], references: [id])
-
-  book Book @relation(fields: [bookId], references: [id])
+  book   Book   @relation(fields: [bookId], references: [id])
 }
 
 model Fine {
-  id Int @id @default(autoincrement())
-
-  borrowId Int @unique
-
-  amount Float
-
-  reason String?
-
-  status PaymentStatus @default(PENDING)
-
-  createdAt DateTime @default(now())
+  id       Int    @id @default(autoincrement())
+  borrowId Int
+  amount   Float
+  reason   String?
+  status   PaymentStatus @default(PENDING)
+  createdAt DateTime     @default(now())
 
   borrow Borrow @relation(fields: [borrowId], references: [id])
+}
+
+// ---- Bổ sung bảng 9: THU_TIEN_PHAT (QĐ-06) ----
+model Receipt {
+  id           Int      @id @default(autoincrement())
+  userId       Int      
+  amountPaid   Float    
+  collectedDate DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+}
+
+// ---- Bổ sung bảng 10: THAM_SO (QĐ-08) ----
+model SystemParam {
+  key         String @id
+  value       String 
+  description String?
+  updatedAt   DateTime @updatedAt
 }

@@ -11,6 +11,8 @@ import { FineModule } from './modules/fine/fine.module';
 import { FineService } from './modules/fine/fine.service';
 import { FineController } from './modules/fine/fine.controller';
 import { DashboardModule } from './modules/dashboard/dashboard.module';
+import { SystemParamsModule } from './system-params/system-params.module';
+import { ReceiptsModule } from './receipts/receipts.module';
 
 @Module({
   imports: [
@@ -26,6 +28,8 @@ import { DashboardModule } from './modules/dashboard/dashboard.module';
     UsersModule,
     FineModule,
     DashboardModule,
+    SystemParamsModule,
+    ReceiptsModule,
   ],
   providers: [FineService],
   controllers: [FineController],
