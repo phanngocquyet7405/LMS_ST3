@@ -27,13 +27,34 @@ axiosClient.interceptors.request.use(
 axiosClient.interceptors.response.use(
     (response) => response,
     (error) => {
-        if (error.response?.status === 401) {
+        const status = error.response?.status;
+        const data = error.response?.data;
+        const url = error.config?.url;
+
+        console.error("[v0] API Error:", {
+            status,
+            url,
+            data,
+            message: error.message,
+        });
+
+        if (status === 401) {
             if (typeof window !== "undefined") {
                 localStorage.removeItem("access_token");
                 localStorage.removeItem("user");
-                window.location.href = "/login";
+                // Redirect to login only if not already on login page
+                if (!window.location.pathname.includes("/login")) {
+                    window.location.href = "/auth/login";
+                }
             }
         }
+
+        if (status === 403) {
+            console.warn(
+                "[v0] Access denied (403). This endpoint may not be available on the backend yet."
+            );
+        }
+
         return Promise.reject(error);
     }
 );

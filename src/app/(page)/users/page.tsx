@@ -1,9 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import bookService from "../../service/BookService";
-import type { Book } from "@/lib/index";
-import { AddBookModal } from "@/src/components/modals/AddBookModal";
+import { useRouter } from "next/navigation";
+import userService from "../../service/UserService";
+import AuthService from "../../service/AuthService";
+import type { User } from "@/lib/index";
 import {
   Plus,
   Search,
@@ -12,56 +13,79 @@ import {
   Trash2,
   ChevronLeft,
   ChevronRight,
+  Mail,
+  Phone,
+  Shield,
+  AlertCircle,
 } from "lucide-react";
-import Image from "next/image";
 
-const AVAILABILITY_BADGE = (book: Book) => {
-  if (book.available === 0)
-    return {
-      label: "Out of Stock",
+const ROLE_BADGE = (role: string) => {
+  const roleConfig: Record<string, { label: string; className: string }> = {
+    ADMIN: {
+      label: "Admin",
       className: "bg-rose-50 text-rose-700 border border-rose-200",
-    };
-  if (book.available < book.quantity)
-    return {
-      label: `${book.available} Available`,
-      className: "bg-amber-50 text-amber-700 border border-amber-200",
-    };
-  return {
-    label: "Available",
-    className: "bg-emerald-50 text-emerald-700 border border-emerald-200",
+    },
+    LIBRARIAN: {
+      label: "Librarian",
+      className: "bg-blue-50 text-blue-700 border border-blue-200",
+    },
+    USER: {
+      label: "User",
+      className: "bg-emerald-50 text-emerald-700 border border-emerald-200",
+    },
   };
+
+  return roleConfig[role] || roleConfig.USER;
 };
 
-export default function BooksPage() {
-  const [books, setBooks] = useState<Book[]>([]);
+const STATUS_BADGE = (active: boolean) => {
+  return active
+    ? {
+        label: "Active",
+        className: "bg-emerald-50 text-emerald-700 border border-emerald-200",
+      }
+    : {
+        label: "Inactive",
+        className: "bg-slate-50 text-slate-700 border border-slate-200",
+      };
+};
+
+export default function UsersPage() {
+  const router = useRouter();
+  const [users, setUsers] = useState<User[]>([]);
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
   const [totalElements, setTotalElements] = useState(0);
   const [loading, setLoading] = useState(true);
-  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const LIMIT = 10;
 
   useEffect(() => {
     let isMounted = true;
 
-    // Để tránh lỗi setState đồng bộ trong Effect, ta thực hiện gọi hàm và xử lý
-    // các trạng thái cập nhật dữ liệu hoàn toàn bất đồng bộ bên trong khối lệnh xử lý hứa (Promise)
-    bookService
+    // Check if user is authenticated
+    if (!AuthService.isAuthenticated()) {
+      router.push("/auth/login");
+      return;
+    }
+
+    userService
       .getAll(page, LIMIT, search)
       .then((res) => {
         if (!isMounted) return;
 
-        // Cập nhật lại chính xác theo cấu trúc thuộc tính của PaginatedResponse trong dự án của bạn
-        const bookList = res.data || [];
+        const userList = res.data || [];
         const total = res.total || 0;
 
-        setBooks(bookList);
+        setUsers(userList);
         setTotalElements(total);
-        setLoading(false); // Đóng loading tại đây để đảm bảo an toàn render
+        setLoading(false);
+        setError(null);
       })
       .catch((err) => {
         if (isMounted) {
-          console.error(err);
+          console.error("[v0] Error fetching users:", err);
+          setError(err.response?.data?.message || "Failed to load users");
           setLoading(false);
         }
       });
@@ -69,42 +93,36 @@ export default function BooksPage() {
     return () => {
       isMounted = false;
     };
-  }, [page, search]);
+  }, [page, search, router]);
 
   const handleDelete = async (id: number) => {
-    if (!confirm("Bạn có chắc muốn xóa cuốn sách này?")) return;
+    if (!confirm("Are you sure you want to delete this user?")) return;
     try {
       setLoading(true);
-      await bookService.delete(id);
+      await userService.delete(id);
 
-      const res = await bookService.getAll(page, LIMIT, search);
-      setBooks(res.data || []);
+      const res = await userService.getAll(page, LIMIT, search);
+      setUsers(res.data || []);
       setTotalElements(res.total || 0);
     } catch (err) {
-      console.error("[v0] Error deleting book:", err);
+      console.error("Error deleting user:", err);
+      alert("Failed to delete user");
     } finally {
       setLoading(false);
     }
   };
 
-  const handleAddBookSuccess = (newBook: Book) => {
-    setBooks([newBook, ...books.slice(0, LIMIT - 1)]);
-    setTotalElements(totalElements + 1);
-  };
-
   const totalPages = Math.ceil(totalElements / LIMIT) || 1;
 
-  // Xử lý thay đổi tìm kiếm tách biệt trạng thái loading nếu cần thiết
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearch(e.target.value);
     setPage(1);
-    setLoading(true); // Kích hoạt trạng thái chờ trực tiếp từ sự kiện tương tác người dùng
+    setLoading(true);
   };
 
-  // Xử lý chuyển trang chủ động
   const handlePageChange = (newPage: number) => {
     setPage(newPage);
-    setLoading(true); // Kích hoạt trạng thái chờ trực tiếp từ sự kiện click chuột
+    setLoading(true);
   };
 
   return (
@@ -116,19 +134,27 @@ export default function BooksPage() {
             className="text-[32px] font-bold leading-10 text-[#191c1e]"
             style={{ fontFamily: "Hanken Grotesk, sans-serif" }}
           >
-            Book Catalog
+            Users Management
           </h2>
           <p className="text-[14px] text-[#424754] mt-1">
-            Manage library inventory, add new titles, and track availability.
+            Manage library users, roles, and member information.
           </p>
         </div>
-        <button 
-          onClick={() => setIsAddModalOpen(true)}
-          className="bg-[#0058be] text-white text-[12px] font-semibold tracking-[0.05em] uppercase px-6 py-3 rounded-lg flex items-center gap-2 hover:bg-[#005ac2] transition-colors shadow-sm whitespace-nowrap"
-        >
-          <Plus size={16} /> Add New Book
+        <button className="bg-[#0058be] text-white text-[12px] font-semibold tracking-[0.05em] uppercase px-6 py-3 rounded-lg flex items-center gap-2 hover:bg-[#005ac2] transition-colors shadow-sm whitespace-nowrap">
+          <Plus size={16} /> Add New User
         </button>
       </div>
+
+      {/* Error Alert */}
+      {error && (
+        <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg flex items-start gap-3">
+          <AlertCircle size={20} className="text-red-600 flex-shrink-0 mt-0.5" />
+          <div>
+            <h3 className="font-semibold text-red-900">Error</h3>
+            <p className="text-sm text-red-700">{error}</p>
+          </div>
+        </div>
+      )}
 
       {/* Filter Bar */}
       <div className="bg-white rounded-xl border border-[#c2c6d6] p-4 mb-6 shadow-sm">
@@ -144,7 +170,7 @@ export default function BooksPage() {
               />
               <input
                 type="text"
-                placeholder="Title, ISBN, or Author"
+                placeholder="Name, Email, or Phone"
                 value={search}
                 onChange={handleSearchChange}
                 className="w-full pl-10 pr-4 py-2 bg-[#f7f9fb] border border-[#c2c6d6] rounded-lg text-[14px] text-[#191c1e] focus:outline-none focus:border-[#0058be] transition-colors"
@@ -153,10 +179,13 @@ export default function BooksPage() {
           </div>
           <div className="w-full lg:w-48 space-y-1.5">
             <label className="text-[12px] font-semibold tracking-[0.05em] text-[#424754] uppercase">
-              Category
+              Role Filter
             </label>
             <select className="w-full appearance-none px-4 py-2 bg-[#f7f9fb] border border-[#c2c6d6] rounded-lg text-[14px] text-[#191c1e] focus:outline-none focus:border-[#0058be]">
-              <option>All Categories</option>
+              <option>All Roles</option>
+              <option>ADMIN</option>
+              <option>LIBRARIAN</option>
+              <option>USER</option>
             </select>
           </div>
         </div>
@@ -169,12 +198,12 @@ export default function BooksPage() {
             <thead>
               <tr className="bg-white border-b border-[#c2c6d6]">
                 {[
-                  "Cover",
-                  "Title & ISBN",
-                  "Author",
-                  "Category",
-                  "Qty",
+                  "Name",
+                  "Email",
+                  "Phone",
+                  "Role",
                   "Status",
+                  "Join Date",
                   "Actions",
                 ].map((h) => (
                   <th
@@ -193,68 +222,70 @@ export default function BooksPage() {
                     <div className="w-8 h-8 border-4 border-[#0058be] border-t-transparent rounded-full animate-spin mx-auto" />
                   </td>
                 </tr>
-              ) : books.length === 0 ? (
+              ) : users.length === 0 ? (
                 <tr>
                   <td
                     colSpan={7}
                     className="py-16 text-center text-[14px] text-[#727785]"
                   >
-                    Không tìm thấy sách nào
+                    No users found
                   </td>
                 </tr>
               ) : (
-                books.map((book) => {
-                  const badge = AVAILABILITY_BADGE(book);
+                users.map((user) => {
+                  const roleBadge = ROLE_BADGE(user.role || "USER");
+                  const statusBadge = STATUS_BADGE(true); // User from list is always active
+                  const joinDate = user.createdAt
+                    ? new Date(user.createdAt).toLocaleDateString("en-US")
+                    : "—";
+
                   return (
                     <tr
-                      key={book.id}
+                      key={user.id}
                       className="hover:bg-[#f2f4f6] transition-colors group"
                     >
                       <td className="px-6 py-4">
-                        <div className="w-10 h-14 bg-[#e6e8ea] rounded shadow-sm overflow-hidden flex items-center justify-center">
-                          {book.imageUrl ? (
-                            <Image
-                              src={book.imageUrl}
-                              alt={book.title}
-                              className="w-full h-full object-cover"
-                            />
-                          ) : (
-                            <span className="text-[#727785] text-[10px]">
-                              IMG
-                            </span>
-                          )}
+                        <div>
+                          <div className="font-semibold text-[16px] text-[#191c1e] group-hover:text-[#0058be] transition-colors">
+                            {user.fullName || "—"}
+                          </div>
+                          <div className="text-[13px] text-[#424754] mt-0.5">
+                            ID: {user.id}
+                          </div>
                         </div>
                       </td>
                       <td className="px-6 py-4">
-                        <div className="font-semibold text-[16px] text-[#191c1e] group-hover:text-[#0058be] transition-colors leading-6">
-                          {book.title}
+                        <div className="flex items-center gap-2 text-[14px] text-[#424754]">
+                          <Mail size={14} className="text-[#727785]" />
+                          {user.email || "—"}
                         </div>
-                        <div className="text-[13px] text-[#424754] mt-0.5">
-                          {book.isbn}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 text-[14px] text-[#424754]">
-                        {book.author?.name ?? "—"}
                       </td>
                       <td className="px-6 py-4">
-                        {book.category ? (
-                          <span className="inline-flex px-2 py-1 rounded bg-[#d0e1fb]/50 text-[#38485d] text-[11px] font-semibold uppercase tracking-wide">
-                            {book.category.name}
+                        <div className="flex items-center gap-2 text-[14px] text-[#424754]">
+                          <Phone size={14} className="text-[#727785]" />
+                          {user.phone || "—"}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="flex items-center gap-2">
+                          <Shield size={14} className="text-[#727785]" />
+                          <span
+                            className={`inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-semibold uppercase tracking-wide ${roleBadge.className}`}
+                          >
+                            {roleBadge.label}
                           </span>
-                        ) : (
-                          <span className="text-[#727785] text-[14px]">—</span>
-                        )}
-                      </td>
-                      <td className="px-6 py-4 text-right tabular-nums text-[14px] text-[#191c1e]">
-                        {book.quantity}
+                        </div>
                       </td>
                       <td className="px-6 py-4">
                         <span
-                          className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold uppercase tracking-wide ${badge.className}`}
+                          className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold uppercase tracking-wide ${statusBadge.className}`}
                         >
                           <span className="w-1.5 h-1.5 rounded-full bg-current" />
-                          {badge.label}
+                          {statusBadge.label}
                         </span>
+                      </td>
+                      <td className="px-6 py-4 text-[14px] text-[#424754]">
+                        {joinDate}
                       </td>
                       <td className="px-6 py-4">
                         <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -265,7 +296,7 @@ export default function BooksPage() {
                             <Pencil size={18} />
                           </button>
                           <button
-                            onClick={() => handleDelete(book.id)}
+                            onClick={() => handleDelete(user.id)}
                             className="p-1.5 text-[#424754] hover:text-[#ba1a1a] hover:bg-[#ffdad6]/30 rounded transition-colors"
                           >
                             <Trash2 size={18} />
@@ -285,17 +316,17 @@ export default function BooksPage() {
           <div className="text-[14px] text-[#424754]">
             Showing{" "}
             <span className="font-semibold text-[#191c1e]">
-              {books.length > 0 ? (page - 1) * LIMIT + 1 : 0}
+              {users.length > 0 ? (page - 1) * LIMIT + 1 : 0}
             </span>{" "}
             to{" "}
             <span className="font-semibold text-[#191c1e]">
-              {(page - 1) * LIMIT + books.length}
+              {(page - 1) * LIMIT + users.length}
             </span>{" "}
             of{" "}
             <span className="font-semibold text-[#191c1e]">
               {totalElements}
             </span>{" "}
-            books
+            users
           </div>
           <div className="flex items-center gap-1">
             <button
@@ -341,12 +372,6 @@ export default function BooksPage() {
           </div>
         </div>
       </div>
-
-      <AddBookModal
-        isOpen={isAddModalOpen}
-        onClose={() => setIsAddModalOpen(false)}
-        onSuccess={handleAddBookSuccess}
-      />
     </div>
   );
 }

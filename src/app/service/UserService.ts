@@ -13,12 +13,17 @@ class UserService {
 
     async me(): Promise<User> {
 
-        const response =
-            await axiosClient.get(
-                API_ENDPOINTS.USERS.ME
-            );
+        try {
+            const response =
+                await axiosClient.get(
+                    API_ENDPOINTS.USERS.ME
+                );
 
-        return response.data;
+            return response.data;
+        } catch (error) {
+            console.error("[v0] Error getting current user:", error);
+            throw error;
+        }
     }
 
     async getAll(
@@ -29,28 +34,38 @@ class UserService {
         PaginatedResponse<User>
     > {
 
-        const response =
-            await axiosClient.get(
-                API_ENDPOINTS.USERS.LIST(
-                    page,
-                    limit,
-                    search
-                )
-            );
+        try {
+            const response =
+                await axiosClient.get(
+                    API_ENDPOINTS.USERS.LIST(
+                        page,
+                        limit,
+                        search
+                    )
+                );
 
-        return response.data;
+            return response.data;
+        } catch (error) {
+            console.error("[v0] Error getting users:", error);
+            throw error;
+        }
     }
 
     async getById(
         id: number
     ): Promise<User> {
 
-        const response =
-            await axiosClient.get(
-                API_ENDPOINTS.USERS.BY_ID(id)
-            );
+        try {
+            const response =
+                await axiosClient.get(
+                    API_ENDPOINTS.USERS.BY_ID(id)
+                );
 
-        return response.data;
+            return response.data;
+        } catch (error) {
+            console.error("[v0] Error getting user by id:", error);
+            throw error;
+        }
     }
 
     async update(
@@ -58,25 +73,35 @@ class UserService {
         data: Partial<User>
     ): Promise<User> {
 
-        const response =
-            await axiosClient.patch(
-                API_ENDPOINTS.USERS.BY_ID(id),
-                data
-            );
+        try {
+            const response =
+                await axiosClient.patch(
+                    API_ENDPOINTS.USERS.BY_ID(id),
+                    data
+                );
 
-        return response.data;
+            return response.data;
+        } catch (error) {
+            console.error("[v0] Error updating user:", error);
+            throw error;
+        }
     }
 
     async delete(
         id: number
     ) {
 
-        const response =
-            await axiosClient.delete(
-                API_ENDPOINTS.USERS.BY_ID(id)
-            );
+        try {
+            const response =
+                await axiosClient.delete(
+                    API_ENDPOINTS.USERS.BY_ID(id)
+                );
 
-        return response.data;
+            return response.data;
+        } catch (error) {
+            console.error("[v0] Error deleting user:", error);
+            throw error;
+        }
     }
 
 }

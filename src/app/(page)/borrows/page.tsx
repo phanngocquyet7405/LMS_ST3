@@ -4,6 +4,8 @@ import { useEffect, useState } from "react";
 import borrowService from "../../service/BorrowService";
 import type { Borrow } from "@/lib/index";
 import { formatDate } from "@/lib/utils";
+import { CreateBorrowModal } from "@/src/components/modals/CreateBorrowModal";
+import { ReturnBorrowModal } from "@/src/components/modals/ReturnBorrowModal";
 import {
   AlertTriangle,
   BookOpen,
@@ -13,6 +15,7 @@ import {
   ChevronLeft,
   ChevronRight,
   RotateCcw,
+  Plus,
 } from "lucide-react";
 
 const STATUS_BADGE: Record<string, { label: string; className: string }> = {
@@ -25,6 +28,9 @@ export default function BorrowsPage() {
   const [borrows, setBorrows] = useState<Borrow[]>([]); // Khởi tạo luôn là mảng rỗng để không bị undefined
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [isReturnModalOpen, setIsReturnModalOpen] = useState(false);
+  const [selectedBorrowId, setSelectedBorrowId] = useState<number | null>(null);
   const PER_PAGE = 10;
 
   useEffect(() => {
@@ -84,12 +90,20 @@ export default function BorrowsPage() {
             Manage current borrowings and returns.
           </p>
         </div>
-        <button
-          onClick={() => alert("Chức năng đang được phát triển")}
-          className="flex items-center gap-2 bg-[#ba1a1a] text-white px-4 py-2 rounded-lg text-[12px] font-semibold uppercase tracking-wide hover:bg-[#ba1a1a]/90 transition-colors shadow-sm"
-        >
-          <AlertTriangle size={16} /> Check Overdue
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setIsCreateModalOpen(true)}
+            className="flex items-center gap-2 bg-[#2170e4] text-white px-4 py-2 rounded-lg text-[12px] font-semibold uppercase tracking-wide hover:bg-[#0058be] transition-colors shadow-sm"
+          >
+            <Plus size={16} /> New Borrow
+          </button>
+          <button
+            onClick={() => alert("Chức năng đang được phát triển")}
+            className="flex items-center gap-2 bg-[#ba1a1a] text-white px-4 py-2 rounded-lg text-[12px] font-semibold uppercase tracking-wide hover:bg-[#ba1a1a]/90 transition-colors shadow-sm"
+          >
+            <AlertTriangle size={16} /> Check Overdue
+          </button>
+        </div>
       </div>
 
       {/* Stats */}
@@ -222,9 +236,10 @@ export default function BorrowsPage() {
                       <td className="py-4 px-4 text-right whitespace-nowrap">
                         {b.status !== "RETURNED" && (
                           <button
-                            onClick={() =>
-                              alert("Chức năng đang được phát triển")
-                            }
+                            onClick={() => {
+                              setSelectedBorrowId(b.id);
+                              setIsReturnModalOpen(true);
+                            }}
                             className="text-[#0058be] hover:text-[#004395] text-[12px] font-semibold mr-3 transition-colors flex items-center gap-1 inline-flex"
                           >
                             <RotateCcw size={14} /> Return
@@ -267,6 +282,38 @@ export default function BorrowsPage() {
           </div>
         </div>
       </div>
+
+      <CreateBorrowModal
+        isOpen={isCreateModalOpen}
+        onClose={() => setIsCreateModalOpen(false)}
+        onSuccess={(newBorrow) => {
+          setBorrows([newBorrow, ...borrows]);
+        }}
+      />
+
+      <ReturnBorrowModal
+        isOpen={isReturnModalOpen}
+        onClose={() => setIsReturnModalOpen(false)}
+        borrowId={selectedBorrowId}
+        onSuccess={() => {
+          setIsReturnModalOpen(false);
+          setSelectedBorrowId(null);
+          // Refresh borrows list
+          const fetchBorrows = async () => {
+            try {
+              const response = await borrowService.getAll();
+              if (response && Array.isArray(response)) {
+                setBorrows(response);
+              } else if (response && Array.isArray(response.data)) {
+                setBorrows(response.data);
+              }
+            } catch (error) {
+              console.error("[v0] Error refreshing borrows:", error);
+            }
+          };
+          fetchBorrows();
+        }}
+      />
     </div>
   );
 }

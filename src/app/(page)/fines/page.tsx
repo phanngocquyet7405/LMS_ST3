@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import fineService from "../../service/FineService";
 import type { Fine } from "@/lib";
 import { formatCurrency, formatDate } from "@/lib/utils";
+import { AddFineModal } from "@/src/components/modals/AddFineModal";
 import {
   Plus,
   Search,
@@ -35,6 +36,7 @@ export default function FinesPage() {
   );
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const PER_PAGE = 10;
 
   useEffect(() => {
@@ -116,7 +118,7 @@ export default function FinesPage() {
           </p>
         </div>
         <button
-          onClick={() => alert("Chức năng đang được phát triển")}
+          onClick={() => setIsAddModalOpen(true)}
           className="flex items-center gap-2 bg-[#0058be] text-white px-4 py-2 rounded-lg text-[12px] font-semibold uppercase tracking-wide hover:bg-[#004395] transition-colors shadow-sm"
         >
           <Plus size={16} /> Collect New Fine
@@ -358,6 +360,14 @@ export default function FinesPage() {
           </div>
         </div>
       </div>
+
+      <AddFineModal
+        isOpen={isAddModalOpen}
+        onClose={() => setIsAddModalOpen(false)}
+        onSuccess={(fine) => {
+          setFines([fine, ...fines]);
+        }}
+      />
     </div>
   );
 }

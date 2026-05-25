@@ -3,7 +3,8 @@
 import { useEffect, useState } from "react";
 import { CategoriesService } from "../../service/CategoriesService";
 import type { Category } from "@/lib/index";
-import { Plus, Pencil, Trash2, ChevronLeft, ChevronRight } from "lucide-react";
+import { AddCategoryModal } from "@/src/components/modals/AddCategoryModal";
+import { Plus, Pencil, Trash2, ChevronLeft, ChevronRight, Search } from "lucide-react";
 
 const CATEGORY_ICONS = ["📚", "🔬", "🎭", "🏛️", "🌍", "💡", "🎨", "⚙️"];
 const CATEGORY_COLORS = [
@@ -17,6 +18,8 @@ export default function CategoriesPage() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
+  const [search, setSearch] = useState("");
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const PER_PAGE = 8;
 
   useEffect(() => {
@@ -65,12 +68,19 @@ export default function CategoriesPage() {
   };
 
   // Logic phân trang ở Client-side
-  const totalPages = Math.ceil(categories.length / PER_PAGE) || 1;
-  const paginated = categories.slice((page - 1) * PER_PAGE, page * PER_PAGE);
+  const filtered = categories.filter((cat) =>
+    cat.name.toLowerCase().includes(search.toLowerCase())
+  );
+  const totalPages = Math.ceil(filtered.length / PER_PAGE) || 1;
+  const paginated = filtered.slice((page - 1) * PER_PAGE, page * PER_PAGE);
 
   // Hàm chuyển đổi trang an toàn
   const handlePageChange = (newPage: number) => {
     setPage(newPage);
+  };
+
+  const handleAddCategorySuccess = (newCategory: Category) => {
+    setCategories([newCategory, ...categories]);
   };
 
   return (
@@ -86,9 +96,29 @@ export default function CategoriesPage() {
             topics.
           </p>
         </div>
-        <button className="bg-[#0058be] text-white text-xs font-semibold tracking-wider uppercase px-4 py-2.5 rounded-lg flex items-center gap-2 hover:bg-[#005ac2] transition-colors shadow-sm">
+        <button 
+          onClick={() => setIsAddModalOpen(true)}
+          className="bg-[#0058be] text-white text-xs font-semibold tracking-wider uppercase px-4 py-2.5 rounded-lg flex items-center gap-2 hover:bg-[#005ac2] transition-colors shadow-sm"
+        >
           <Plus size={16} /> Add New Category
         </button>
+      </div>
+
+      {/* Search Filter */}
+      <div className="bg-white rounded-lg border border-[#c2c6d6] p-4 shadow-sm">
+        <div className="relative">
+          <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#727785]" />
+          <input
+            type="text"
+            placeholder="Search categories..."
+            value={search}
+            onChange={(e) => {
+              setSearch(e.target.value);
+              setPage(1);
+            }}
+            className="w-full pl-10 pr-4 py-2 bg-[#f7f9fb] border border-[#c2c6d6] rounded-lg text-[14px] text-[#191c1e] focus:outline-none focus:border-[#0058be] transition-colors"
+          />
+        </div>
       </div>
 
       {/* Grid Content */}
@@ -218,6 +248,12 @@ export default function CategoriesPage() {
           </button>
         </div>
       </div>
+
+      <AddCategoryModal
+        isOpen={isAddModalOpen}
+        onClose={() => setIsAddModalOpen(false)}
+        onSuccess={handleAddCategorySuccess}
+      />
     </div>
   );
 }
