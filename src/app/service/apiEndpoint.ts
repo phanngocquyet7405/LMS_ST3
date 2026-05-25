@@ -16,7 +16,16 @@ export const API_ENDPOINTS = {
         BASE: `${BASE_URL}/users`,
         BY_ID: (id: number) => `${BASE_URL}/users/${id}`,
         LIST: (page = 1, limit = 10, search = "") =>
-            `${BASE_URL}/users?page=${page}&limit=${limit}&search=${encodeURIComponent(search)}`
+            `${BASE_URL}/users?page=${page}&limit=${limit}&search=${encodeURIComponent(search)}`,
+        UPDATE_PROFILE: (id: number) => `${BASE_URL}/users/${id}/profile`,
+        CHANGE_PASSWORD: (id: number) => `${BASE_URL}/users/${id}/change-password`,
+    },
+
+    PROFILE: {
+        ME: `${BASE_URL}/profile/me`,
+        UPDATE: `${BASE_URL}/profile/update`,
+        UPLOAD_AVATAR: `${BASE_URL}/profile/avatar`,
+        CHANGE_PASSWORD: `${BASE_URL}/profile/change-password`,
     },
 
     BOOKS: {
