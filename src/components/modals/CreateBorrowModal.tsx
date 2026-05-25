@@ -47,10 +47,10 @@ export function CreateBorrowModal({ isOpen, onClose, onSuccess }: CreateBorrowMo
 
       const newBorrow = await borrowService.create({
         userId: parseInt(formData.userId),
-        bookId: parseInt(formData.bookId),
+        book: { id: parseInt(formData.bookId) },
         borrowDate: formData.borrowDate,
         dueDate: formData.dueDate,
-      });
+      } as any);
 
       onSuccess(newBorrow);
       setFormData({

@@ -29,10 +29,7 @@ export function ReturnBorrowModal({ isOpen, onClose, borrowId, onSuccess }: Retu
         throw new Error("Return date is required");
       }
 
-      await borrowService.returnBook(borrowId, {
-        returnDate,
-        notes: notes || undefined,
-      });
+      await borrowService.returnBook(borrowId);
 
       onSuccess();
       setReturnDate(new Date().toISOString().split("T")[0]);

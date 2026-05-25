@@ -53,7 +53,7 @@ export function AddBookModal({ isOpen, onClose, onSuccess }: AddBookModalProps) 
         isbn: formData.isbn,
         description: formData.description,
         quantity: formData.quantity,
-        publishedAt: formData.publishedYear,
+        publishedAt: formData.publishedYear.toString(),
       });
 
       onSuccess(newBook);

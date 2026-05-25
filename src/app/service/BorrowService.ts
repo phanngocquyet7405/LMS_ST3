@@ -64,11 +64,11 @@ class BorrowService {
                     user: { id: 0, fullName: "Unknown" },
                     borrowDate: new Date().toISOString(),
                     dueDate: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString(),
-                    returnDate: undefined,
+                    returnDate: null,
                     status: "ACTIVE",
                     totalFine: 0,
                     createdAt: new Date().toISOString(),
-                } as Borrow;
+                } as unknown as Borrow;
             }
             throw error;
         }
