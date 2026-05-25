@@ -31,6 +31,13 @@ export class UsersController {
         return this.usersService.update(req.user.userId, data);
     }
 
+    @Get(':id')
+    @UseGuards(RolesGuard)
+    @Roles('ADMIN', 'LIBRARIAN')
+    findOne(@Param('id', ParseIntPipe) id: number) {
+        return this.usersService.findById(id);
+    }
+
     @Get()
     @UseGuards(RolesGuard)
     @Roles('ADMIN', 'LIBRARIAN')
