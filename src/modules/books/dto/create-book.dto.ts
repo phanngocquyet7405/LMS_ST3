@@ -29,6 +29,10 @@ export class CreateBookDto {
     @IsInt()
     categoryId?: number;
 
+    @IsNotEmpty({ message: 'Năm xuất bản không được để trống' })
+    @IsInt({ message: 'Năm xuất bản phải là số nguyên' })
+    publishYear: number;
+
     @IsNotEmpty({ message: 'Số lượng không được để trống' })
     @IsNumber()
     @Min(0, { message: 'Số lượng không được nhỏ hơn 0' })

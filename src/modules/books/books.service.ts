@@ -24,7 +24,7 @@ export class BooksService {
                 quantity: dto.quantity ? +dto.quantity : 0,
                 available: dto.quantity ? +dto.quantity : 0,
                 imageUrl: dto.imageUrl,
-                // Áp dụng gán mã ID của bảng Tác giả và Danh mục
+                publishYear: +dto.publishYear,
                 authorId: dto.authorId ? +dto.authorId : null,
                 categoryId: dto.categoryId ? +dto.categoryId : null
             }

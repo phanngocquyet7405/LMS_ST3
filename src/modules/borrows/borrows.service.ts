@@ -97,7 +97,7 @@ export class BorrowService {
                         book: true,
                     },
                 },
-                fine: true,
+                fines: true,
             },
             orderBy: {
                 createdAt: 'desc',
@@ -115,7 +115,7 @@ export class BorrowService {
                         book: true,
                     },
                 },
-                fine: true,
+                fines: true,
             },
         });
 
@@ -143,7 +143,6 @@ export class BorrowService {
 
             const bookCache = new Map<number, any>();
 
-            // restore stock
             for (const item of borrow.items) {
                 let book = bookCache.get(item.bookId);
 
@@ -161,20 +160,28 @@ export class BorrowService {
                     bookCache.set(item.bookId, book);
                 }
 
+                // Cập nhật lại số lượng sách sẵn có trong kho
                 await tx.book.update({
                     where: { id: item.bookId },
                     data: {
                         available: book.available + item.quantity,
                     },
                 });
+
+                // Cập nhật returnDate cho từng item trong bảng BorrowItem
+                await tx.borrowItem.update({
+                    where: { id: item.id },
+                    data: {
+                        returnDate: new Date(), // 👈 returnDate được lưu ở bảng BorrowItem theo đúng schema của bạn
+                    },
+                });
             }
 
-            // update borrow
+            // 2. Cuối cùng, cập nhật trạng thái của phiếu mượn gốc
             return tx.borrow.update({
-                where: { id },
+                where: { id }, // 👈 Sử dụng biến "id" lấy từ tham số truyền vào của hàm
                 data: {
                     status: 'RETURNED',
-                    returnDate: new Date(),
                 },
             });
         });

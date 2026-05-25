@@ -15,7 +15,7 @@ export class FineService {
         const borrow = await this.prisma.borrow.findUnique({
             where: { id: dto.borrowId },
             include: {
-                fine: true,
+                fines: true,
             },
         });
 
@@ -23,7 +23,7 @@ export class FineService {
             throw new NotFoundException('Phiếu mượn không tồn tại');
         }
 
-        if (borrow.fine) {
+        if (borrow.fines) {
             throw new ConflictException('Phiếu mượn đã có phạt');
         }
 
@@ -103,16 +103,15 @@ export class FineService {
                 status: 'OVERDUE',
             },
             include: {
-                fine: true,
+                fines: true,
             },
         });
 
         let count = 0;
 
         for (const borrow of overdueBorrows) {
-            if (borrow.fine) continue;
+            if (borrow.fines && borrow.fines.length > 0) continue;
 
-            // simple rule: 5k/day overdue
             const today = new Date();
             const due = new Date(borrow.dueDate);
 
